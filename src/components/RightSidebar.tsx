@@ -1409,11 +1409,14 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
         {/* Test Panel - Only in split view mode */}
         {isSplitView && (
           <div 
-            className="border border-gray-200 border-b-0 bg-gray-50 flex flex-col rounded-md rounded-b-none overflow-hidden"
-            style={{ 
+            className="border border-gray-200 bg-gray-50 flex flex-col rounded-t-md overflow-hidden"
+            style={{
               width: `${sidebarWidth * 0.5}px`,
               minWidth: '200px',
               margin: '0 10px 10px 0',
+              borderBottom: 'none',
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
             }}
           >
             <TestSection
@@ -2121,7 +2124,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
 
           {/* Sticky Test Panel - appears to the right of fields when split view is active */}
           {isSplitView && (
-            <div className="w-[50%] min-w-[200px] shrink-0 sticky top-0 self-start h-full overflow-hidden border border-gray-200 mr-[10px] mb-[10px] rounded-lg">
+            <div className="w-[50%] min-w-[200px] shrink-0 sticky top-0 self-start h-full overflow-hidden border border-gray-200 border-b-0 mr-[10px] mb-[10px] rounded-lg rounded-b-none">
               {!testResults[selectedCardId || ''] ? (
                 // Empty state - no test run yet
                 <div className="h-full flex flex-col items-center justify-center gap-4 px-4">
@@ -2207,14 +2210,12 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
               <div className="relative z-10 shrink-0">
               <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white">
                 <div className="flex items-center gap-1">
-                  {testResults[selectedCardId || '']?.status !== 'testing' && (
-                    <Tabs value={testPanelTab} onValueChange={(v) => setTestPanelTab(v as 'output' | 'input')}>
+                    <Tabs value={testPanelTab} onValueChange={(v) => { if (testResults[selectedCardId || '']?.status !== 'testing') setTestPanelTab(v as 'output' | 'input'); }}>
                       <TabsList className="h-6 rounded-md">
-                        <TabsTrigger value="output" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Output</TabsTrigger>
-                        <TabsTrigger value="input" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Input</TabsTrigger>
+                        <TabsTrigger value="output" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Output</TabsTrigger>
+                        <TabsTrigger value="input" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Input</TabsTrigger>
                       </TabsList>
                     </Tabs>
-                  )}
                 </div>
                 <div className="flex items-center gap-0.5">
                   <button
@@ -2232,10 +2233,10 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
               </div>
               <div className="h-3 bg-gradient-to-b from-white to-transparent pointer-events-none -mb-3 relative z-[5]" />
               </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pl-[12px] pr-0 pb-0 pt-0 m-[0px] relative group/code [&>*]:pr-[40px]">
+                <div className="flex-1 min-h-0 overflow-y-auto pl-[12px] pr-0 pb-0 pt-0 m-[0px] relative group/code [&>*]:pr-[40px] [&>*]:pt-[15px] [&>*]:pb-[15px]">
                 {/* Floating Copy & Download buttons */}
                 {testResults[selectedCardId || '']?.status !== 'testing' && (
-                  <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px]">
+                  <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px] !pt-0 !pb-0">
                     <button
                       onClick={() => {
                         const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
@@ -2725,15 +2726,14 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
           <div className="relative z-10 shrink-0">
           <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white">
             <div className="flex items-center gap-1">
-              <Tabs value={testPanelTab} onValueChange={(v: string) => setTestPanelTab(v as 'input' | 'output')}>
+              <Tabs value={testPanelTab} onValueChange={(v: string) => { if (testResults[selectedCardId || '']?.status !== 'testing') setTestPanelTab(v as 'input' | 'output'); }}>
                 <TabsList className="h-6 rounded-md">
-                  <TabsTrigger value="output" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Output</TabsTrigger>
-                  <TabsTrigger value="input" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Input</TabsTrigger>
+                  <TabsTrigger value="output" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Output</TabsTrigger>
+                  <TabsTrigger value="input" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Input</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
             <div className="flex items-center gap-0.5">
-              {testResults[selectedCardId || '']?.status !== 'testing' && (
                 <button
                   onClick={() => {
                     setIsSplitView(true);
@@ -2745,17 +2745,16 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                   <Columns2 size={13} />
                   <span>Split View</span>
                 </button>
-              )}
             </div>
           </div>
           <div className="h-3 bg-gradient-to-b from-white to-transparent pointer-events-none -mb-3 relative z-[5]" />
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto pl-3 pr-0 pb-0 pt-0 relative group/code [&>*]:pr-[40px]">
+          <div className="flex-1 overflow-y-auto pl-3 pr-0 pb-0 pt-0 relative group/code [&>*]:pr-[40px] [&>*]:pt-[15px] [&>*]:pb-[15px]">
             {/* Floating Copy & Download buttons */}
             {testResults[selectedCardId || '']?.status !== 'testing' && (
-              <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px]">
+              <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px] !pt-0 !pb-0">
                 <button
                   onClick={() => {
                     const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
