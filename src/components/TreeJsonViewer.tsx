@@ -111,7 +111,7 @@ function renderValue(value: any) {
   }
   if (typeof value === 'string') {
     return (
-      <span className="text-red-600 break-all">
+      <span className="text-[#7f1d1d] break-all">
         "{value}"
       </span>
     );

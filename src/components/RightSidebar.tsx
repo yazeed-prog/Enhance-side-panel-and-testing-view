@@ -1,4 +1,4 @@
-import { X, Pencil, HelpCircle, Plus, Calendar, Clock, Webhook, Wrench, Database, Play, ChevronLeft, ChevronRight, ChevronUp, GripVertical, GripHorizontal, Rows2, Columns2, PanelBottomClose, PanelRightClose, CheckCircle2, XCircle, Loader2, Copy, Download, ArrowLeft } from 'lucide-react';
+import { X, Pencil, HelpCircle, Plus, Calendar, Clock, Webhook, Wrench, Database, Play, ChevronLeft, ChevronRight, ChevronUp, GripVertical, GripHorizontal, Rows2, Columns2, PanelBottomClose, PanelRightClose, CheckCircle2, XCircle, Loader2, Copy, Download, ArrowLeft, Check } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { DataTag, DataTagValue } from './DataTag';
@@ -503,7 +503,8 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
   const [isResizing, setIsResizing] = useState(false);
   const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
-  const [testPanelTab, setTestPanelTab] = useState<'output' | 'input'>('input');
+  const [testPanelTab, setTestPanelTab] = useState<'output' | 'input'>('output');
+  const [jsonCopied, setJsonCopied] = useState(false);
   const resizerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -511,6 +512,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
   useEffect(() => {
     if (!isTestPanelOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
+      if (isResizingRef.current) return;
       if (
         bottomSheetRef.current &&
         !bottomSheetRef.current.contains(e.target as Node)
@@ -1407,7 +1409,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
         {/* Test Panel - Only in split view mode */}
         {isSplitView && (
           <div 
-            className="border border-gray-200 bg-gray-50 flex flex-col rounded-md overflow-hidden" 
+            className="border border-gray-200 border-b-0 bg-gray-50 flex flex-col rounded-md rounded-b-none overflow-hidden"
             style={{ 
               width: `${sidebarWidth * 0.5}px`,
               minWidth: '200px',
@@ -2160,115 +2162,110 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                       <>
                         <Play size={14} fill="currentColor" />
                         <span>Test Step</span>
-                        <span className="text-[11px] opacity-60 ml-0.5">⌘G</span>
+                        <span className="text-[12px] opacity-60 ml-0.5">⌘G</span>
                       </>
                     )}
                   </button>
                 </div>
               ) : (
               <div className="h-full flex flex-col">
-              {/* Test Panel Header */}
-              <div className="flex items-center justify-between px-3 py-2 bg-white shrink-0 min-h-[44px]">
-                <div className="flex items-start gap-2 min-w-0">
+              {/* Status Header */}
+              <div className={`flex items-center justify-between px-2 py-1 shrink-0 border-b border-gray-200 ${
+                testResults[selectedCardId || '']?.status === 'success' ? 'bg-[#f0fdf4]' :
+                testResults[selectedCardId || '']?.status === 'failed' ? 'bg-red-50' :
+                testResults[selectedCardId || '']?.status === 'testing' ? 'bg-[hsl(257,74%,97%)]' :
+                'bg-gray-50'
+              }`}>
+                <div className="flex items-center gap-1.5">
                   {testResults[selectedCardId || '']?.status === 'success' ? (
                     <>
-                      <CheckCircle2 size={14} className="text-[#08943C] shrink-0 mt-[2px]" />
-                      <span className="flex flex-col min-w-0">
-                        <span className="text-[13px] text-[#08943C] font-medium truncate">Tested</span>
-                        {testResults[selectedCardId || '']?.date && (
-                          <span className="text-gray-400 text-[12px] truncate">{testResults[selectedCardId || ''].date}</span>
-                        )}
-                      </span>
+                      <CheckCircle2 size={13} className="text-[#08943C] shrink-0" />
+                      <span className="text-[12px] text-[#08943C] font-medium">Tested</span>
                     </>
                   ) : testResults[selectedCardId || '']?.status === 'failed' ? (
                     <>
-                      <XCircle size={16} className="text-red-500 shrink-0 mt-[2px]" />
-                      <span className="flex flex-col min-w-0">
-                        <span className="text-[13px] text-red-500 font-medium truncate">Test Failed</span>
-                        {testResults[selectedCardId || '']?.date && (
-                          <span className="text-gray-400 text-[12px] truncate">{testResults[selectedCardId || ''].date}</span>
-                        )}
-                      </span>
+                      <XCircle size={13} className="text-[oklch(0.45_0.213_27.518)] shrink-0" />
+                      <span className="text-[12px] text-[oklch(0.45_0.213_27.518)] font-normal">Test Failed</span>
                     </>
                   ) : testResults[selectedCardId || '']?.status === 'testing' ? (
                     <>
-                      <Loader2 size={16} className="text-[hsl(257,74%,50%)] animate-spin shrink-0 mt-[2px]" />
-                      <span className="text-[13px] text-gray-900 font-medium truncate">Testing...</span>
+                      <Loader2 size={13} className="text-[hsl(257,74%,50%)] animate-spin shrink-0" />
+                      <span className="text-[12px] text-[hsl(257,74%,50%)] font-medium">Testing...</span>
                     </>
                   ) : (
                     <>
-                      <Play size={16} className="text-[hsl(257,74%,50%)] shrink-0 mt-[2px]" fill="currentColor" />
-                      <span className="text-[13px] text-gray-900 font-medium truncate">Test Step</span>
+                      <Play size={13} className="text-gray-400 shrink-0" fill="currentColor" />
+                      <span className="text-[12px] text-gray-500 font-medium">Not tested</span>
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-0.5">
+                {testResults[selectedCardId || '']?.date && (
+                  <span className="text-[12px] text-gray-500">{testResults[selectedCardId || ''].date}</span>
+                )}
+              </div>
+              {/* Test Panel Header */}
+              <div className="relative z-10 shrink-0">
+              <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white">
+                <div className="flex items-center gap-1">
                   {testResults[selectedCardId || '']?.status !== 'testing' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
-                          const textarea = document.createElement('textarea');
-                          textarea.value = data;
-                          textarea.style.position = 'fixed';
-                          textarea.style.opacity = '0';
-                          document.body.appendChild(textarea);
-                          textarea.select();
-                          document.execCommand('copy');
-                          document.body.removeChild(textarea);
-                        }}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
-                        title="Copy JSON"
-                      >
-                        <Copy size={14} className="text-black" />
-                        <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                          Copy JSON
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          toast.success('JSON downloaded successfully', {
-                            position: 'bottom-right',
-                            duration: 2000,
-                          });
-                        }}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
-                        title="Download JSON"
-                      >
-                        <Download size={14} className="text-black" />
-                        <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                          Download JSON
-                        </span>
-                      </button>
-                    </>
+                    <Tabs value={testPanelTab} onValueChange={(v) => setTestPanelTab(v as 'output' | 'input')}>
+                      <TabsList className="h-6 rounded-md">
+                        <TabsTrigger value="output" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Output</TabsTrigger>
+                        <TabsTrigger value="input" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Input</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   )}
+                </div>
+                <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => {
                       setIsSplitView(false);
                       setIsTestPanelOpen(true);
                     }}
-                    className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
+                    className="inline-flex items-center gap-1 px-2 h-6 rounded transition-colors text-black hover:bg-gray-100 cursor-pointer text-[12px] font-medium"
                     title="Collapse"
                   >
-                    <PanelBottomClose size={14} className="text-black" />
-                    <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                      Collapse
-                    </span>
+                    <PanelBottomClose size={13} />
+                    <span>Collapse</span>
                   </button>
                 </div>
               </div>
-                {/* Output / Input Switcher */}
+              <div className="h-3 bg-gradient-to-b from-white to-transparent pointer-events-none -mb-3 relative z-[5]" />
+              </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pl-[12px] pr-0 pb-0 pt-0 m-[0px] relative group/code [&>*]:pr-[40px]">
+                {/* Floating Copy & Download buttons */}
                 {testResults[selectedCardId || '']?.status !== 'testing' && (
-                  <div className="bg-white shrink-0 px-[12px] pt-[0px] pb-[8px]">
-                    <Tabs value={testPanelTab} onValueChange={(v) => setTestPanelTab(v as 'output' | 'input')}>
-                      <TabsList className="h-7 w-full rounded-md">
-                        <TabsTrigger value="input" className="text-[12px] h-full rounded-md cursor-pointer">Input</TabsTrigger>
-                        <TabsTrigger value="output" className="text-[12px] h-full rounded-md cursor-pointer">Output</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
+                  <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px]">
+                    <button
+                      onClick={() => {
+                        const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
+                        const textarea = document.createElement('textarea');
+                        textarea.value = data;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        setJsonCopied(true);
+                        setTimeout(() => setJsonCopied(false), 2000);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded transition-colors hover:bg-gray-100 cursor-pointer"
+                      title="Copy JSON"
+                    >
+                      {jsonCopied ? <Check size={13} className="text-black" /> : <Copy size={13} className="text-black" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        toast.success('JSON downloaded successfully', { position: 'bottom-right', duration: 2000 });
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded transition-colors hover:bg-gray-100 cursor-pointer"
+                      title="Download JSON"
+                    >
+                      <Download size={13} className="text-black" />
+                    </button>
                   </div>
                 )}
-                <div className="flex-1 min-h-0 overflow-y-auto px-[12px] py-[0px] m-[0px]">
                   {testResults[selectedCardId || '']?.status === 'testing' ? (
                     <div className="h-full flex flex-col gap-2 p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
@@ -2350,6 +2347,41 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     </>
                   )}
                 </div>
+
+              {/* Test Step / Cancel Button at bottom of split view */}
+              <div className="shrink-0 bg-white px-3 pt-1 pb-3 relative">
+                <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-white to-transparent" />
+                <div className="relative group">
+                  {testResults[selectedCardId || '']?.status === 'testing' ? (
+                    <button
+                      onClick={() => testSectionRef.current?.cancelTest()}
+                      className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer text-[14px]"
+                    >
+                      Cancel Testing
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (hasEmptyRequiredFields) return;
+                          testSectionRef.current?.triggerTest();
+                        }}
+                        disabled={hasEmptyRequiredFields}
+                        className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
+                      >
+                        <Play size={12} fill="currentColor" />
+                        Test Step
+                        <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
+                      </button>
+                      {hasEmptyRequiredFields && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-[#1a1a2e] text-white text-[13px] rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200">
+                          Configure the step first
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
               </div>
               )}
             </div>
@@ -2571,7 +2603,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
             <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-white to-transparent" />
             <div ref={testButtonWrapperRef} className="relative">
               <div
-                onMouseEnter={() => hasEmptyRequiredFields && setTestButtonTooltip(true)}
+                onMouseEnter={() => hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed')) && setTestButtonTooltip(true)}
                 onMouseLeave={() => setTestButtonTooltip(false)}
               >
                 <button
@@ -2589,7 +2621,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     }
                   }}
                   disabled={hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed'))}
-                  className={`w-full px-2 py-1.5 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors ${ (hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed'))) ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
+                  className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ (hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed'))) ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
                 >
                   {testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed') ? (
                     'Show Sample Data'
@@ -2613,9 +2645,8 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     transform: 'translate(-50%, -100%)',
                   }}
                 >
-                  <div className="px-4 py-2.5 bg-[#1a1a2e] text-white text-[13px] rounded-xl whitespace-nowrap flex flex-col items-center gap-0.5 shadow-xl">
-                    <ChevronUp size={16} className="text-gray-400" />
-                    Configure this step first
+                  <div className="px-4 py-2.5 bg-[#1a1a2e] text-white text-[13px] rounded-xl whitespace-nowrap shadow-xl">
+                    Configure the step first
                   </div>
                 </div>,
                 document.body
@@ -2623,56 +2654,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
             </div>
           </div>
 
-          {/* Portal: Test Step button in split view header */}
-          {isSplitView && testButtonHeaderPortalRef.current && createPortal(
-            <div className="relative">
-              <button
-                onClick={() => {
-                  if (testResults[selectedCardId || '']?.status === 'testing') {
-                    testSectionRef.current?.cancelTest();
-                    return;
-                  }
-                  if (hasEmptyRequiredFields) return;
-                  testSectionRef.current?.triggerTest();
-                }}
-                disabled={hasEmptyRequiredFields && testResults[selectedCardId || '']?.status !== 'testing'}
-                onMouseEnter={(e) => {
-                  const isDisabled = hasEmptyRequiredFields && testResults[selectedCardId || '']?.status !== 'testing';
-                  if (isDisabled) {
-                    const el = e.currentTarget.parentElement?.querySelector('[data-split-tooltip]') as HTMLElement;
-                    if (el) el.style.opacity = '1';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget.parentElement?.querySelector('[data-split-tooltip]') as HTMLElement;
-                  if (el) el.style.opacity = '0';
-                }}
-                className={`px-2 py-1 rounded transition-colors flex items-center gap-1.5 text-[13px] ${
-                  testResults[selectedCardId || '']?.status === 'testing'
-                    ? 'text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
-                    : hasEmptyRequiredFields
-                    ? 'text-purple-300 opacity-50 cursor-not-allowed'
-                    : 'text-[hsl(257,74%,50%)] hover:bg-[hsl(257,74%,95%)] cursor-pointer'
-                }`}
-              >
-                {testResults[selectedCardId || '']?.status === 'testing' ? (
-                  <span>Cancel Testing</span>
-                ) : (
-                  <>
-                    <Play size={14} fill="currentColor" />
-                    <span>Test Step ⌘G</span>
-                  </>
-                )}
-              </button>
-              <div
-                data-split-tooltip
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-gray-900 text-white text-[12px] rounded whitespace-nowrap pointer-events-none z-[100] opacity-0 transition-opacity"
-              >
-                Test Step
-              </div>
-            </div>,
-            testButtonHeaderPortalRef.current
-          )}
+          {/* Portal: Test Step button in split view header - removed, moved to bottom */}
 
           {/* Hidden TestSection - provides the triggerTest method via ref */}
           <div className="hidden">
@@ -2698,155 +2680,121 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
       <div 
         ref={bottomSheetRef} 
         className={`absolute bottom-0 left-0 right-0 flex flex-col transition-[height] duration-[450ms] ease-[cubic-bezier(0.25,1,0.5,1)] z-30 ${!isTestPanelOpen ? 'pointer-events-none' : ''}`}
-        style={{ height: isTestPanelOpen ? '60%' : '0%' }}
+        style={{ height: isTestPanelOpen ? '80%' : '0%' }}
       >
           {/* Bottom Panel */}
           <div 
-            className={`flex flex-col flex-1 overflow-hidden rounded-t-2xl shadow-[0_-6px_20px_rgba(0,0,0,0.15)] bg-white border-t border-gray-300 relative z-10 transition-[transform,opacity] duration-[450ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isTestPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
+            className={`flex flex-col flex-1 overflow-hidden rounded-t-2xl shadow-[0_-2px_12px_rgba(0,0,0,0.08)] bg-white border-t border-gray-300 relative z-10 transition-[transform,opacity] duration-[450ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isTestPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
           >
 
-          {/* Sticky Header - Same as split view */}
-          <div className="flex items-center justify-between px-3 py-2 bg-white shrink-0 min-h-[44px]">
-            <div className="flex items-start gap-2 min-w-0">
+          {/* Status Header */}
+          <div className={`flex items-center justify-between px-2 py-1 shrink-0 rounded-t-2xl border-b border-gray-200 ${
+            testResults[selectedCardId || '']?.status === 'success' ? 'bg-[#f0fdf4]' :
+            testResults[selectedCardId || '']?.status === 'failed' ? 'bg-red-50' :
+            testResults[selectedCardId || '']?.status === 'testing' ? 'bg-[hsl(257,74%,97%)]' :
+            'bg-gray-50'
+          }`}>
+            <div className="flex items-center gap-1.5">
               {testResults[selectedCardId || '']?.status === 'success' ? (
                 <>
-                  <CheckCircle2 size={14} className="text-[#08943C] shrink-0 mt-[2px]" />
-                  <span className="flex flex-col min-w-0">
-                    <span className="text-[13px] text-[#08943C] font-medium truncate">Tested</span>
-                    {testResults[selectedCardId || '']?.date && (
-                      <span className="text-gray-400 text-[12px] truncate">{testResults[selectedCardId || ''].date}</span>
-                    )}
-                  </span>
+                  <CheckCircle2 size={13} className="text-[#08943C] shrink-0" />
+                  <span className="text-[12px] text-[#08943C] font-medium">Tested</span>
                 </>
               ) : testResults[selectedCardId || '']?.status === 'failed' ? (
                 <>
-                  <XCircle size={16} className="text-red-500 shrink-0 mt-[2px]" />
-                  <span className="flex flex-col min-w-0">
-                    <span className="text-[13px] text-red-500 font-medium truncate">Test Failed</span>
-                    {testResults[selectedCardId || '']?.date && (
-                      <span className="text-gray-400 text-[12px] truncate">{testResults[selectedCardId || ''].date}</span>
-                    )}
-                  </span>
+                  <XCircle size={13} className="text-[oklch(0.45_0.213_27.518)] shrink-0" />
+                  <span className="text-[12px] text-[oklch(0.45_0.213_27.518)] font-normal">Test Failed</span>
                 </>
               ) : testResults[selectedCardId || '']?.status === 'testing' ? (
                 <>
-                  <Loader2 size={16} className="text-[hsl(257,74%,50%)] animate-spin shrink-0 mt-[2px]" />
-                  <span className="text-[13px] text-gray-900 font-medium truncate">Testing...</span>
+                  <Loader2 size={13} className="text-[hsl(257,74%,50%)] animate-spin shrink-0" />
+                  <span className="text-[12px] text-[hsl(257,74%,50%)] font-medium">Testing...</span>
                 </>
               ) : (
                 <>
-                  <Play size={16} className="text-[hsl(257,74%,50%)] shrink-0 mt-[2px]" fill="currentColor" />
-                  <span className="text-[13px] text-gray-900 font-medium truncate">Test Step</span>
+                  <Play size={13} className="text-gray-400 shrink-0" fill="currentColor" />
+                  <span className="text-[12px] text-gray-500 font-medium">Not tested</span>
                 </>
               )}
             </div>
-            <div className="flex items-center gap-0.5">
-              {testResults[selectedCardId || '']?.status === 'testing' ? (
-                <button
-                  onClick={() => {
-                    testSectionRef.current?.cancelTest();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 text-[13px] text-gray-700 border border-gray-300 rounded hover:bg-gray-100 cursor-pointer transition-colors"
-                >
-                  <span>Cancel</span>
-                </button>
-              ) : (
-                <>
-                  {/* NEW: Bottom Sheet Play Button - Test Step */}
-                  <button
-                    onClick={() => {
-                      if (hasEmptyRequiredFields) return;
-                      const currentTestResult = testResults[selectedCardId || ''];
-                      if (currentTestResult?.status === 'testing') return;
-                      testSectionRef.current?.triggerTest();
-                    }}
-                    disabled={hasEmptyRequiredFields || testResults[selectedCardId || '']?.status === 'testing'}
-                    className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors cursor-pointer group relative z-10 hover:bg-gray-100 ${
-                      (hasEmptyRequiredFields || testResults[selectedCardId || '']?.status === 'testing') ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    title={hasEmptyRequiredFields ? "Configure the step first" : "Test Step"}
-                  >
-                    {testResults[selectedCardId || '']?.status === 'testing' ? (
-                      <Loader2 size={14} className="text-[hsl(257,74%,50%)] animate-spin" />
-                    ) : (
-                      <Play size={14} className="text-[hsl(257,74%,50%)]" fill="hsl(257, 74%, 50%)" />
-                    )}
-                    <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black/95 rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:!opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                      {hasEmptyRequiredFields ? "Configure the step first" : "Test Step ⌘G"}
-                    </span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
-                      const textarea = document.createElement('textarea');
-                      textarea.value = data;
-                      textarea.style.position = 'fixed';
-                      textarea.style.opacity = '0';
-                      document.body.appendChild(textarea);
-                      textarea.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(textarea);
-                    }}
-                    className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
-                    title="Copy JSON"
-                  >
-                    <Copy size={14} className="text-black" />
-                    <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                      Copy JSON
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      toast.success('JSON downloaded successfully', {
-                        position: 'bottom-right',
-                        duration: 2000,
-                      });
-                    }}
-                    className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
-                    title="Download JSON"
-                  >
-                    <Download size={14} className="text-black" />
-                    <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                      Download JSON
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsSplitView(true);
-                      setIsTestPanelOpen(false);
-                    }}
-                    className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative z-10"
-                    title="Open split view"
-                  >
-                    <Columns2 size={14} className="text-black" />
-                    <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
-                      Open split view
-                    </span>
-                  </button>
-                </>
-              )}
-            </div>
+            {testResults[selectedCardId || '']?.date && (
+              <span className="text-[12px] text-gray-500">{testResults[selectedCardId || ''].date}</span>
+            )}
           </div>
-
-          {/* Tabs - Same as split view */}
-          {testResults[selectedCardId || '']?.status !== 'testing' && (
-            <div className="px-3 pb-2 bg-white shrink-0">
-              <Tabs value={testPanelTab} onValueChange={(v: string) => setTestPanelTab(v as 'input' | 'output')} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-7 bg-gray-100 p-0.5 rounded-md">
-                  <TabsTrigger value="input" className="h-6 text-[12px] rounded-[4px] data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm cursor-pointer">
-                    Input
-                  </TabsTrigger>
-                  <TabsTrigger value="output" className="h-6 text-[12px] rounded-[4px] data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm cursor-pointer">
-                    Output
-                  </TabsTrigger>
+          {/* Header with tabs */}
+          <div className="relative z-10 shrink-0">
+          <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white">
+            <div className="flex items-center gap-1">
+              <Tabs value={testPanelTab} onValueChange={(v: string) => setTestPanelTab(v as 'input' | 'output')}>
+                <TabsList className="h-6 rounded-md">
+                  <TabsTrigger value="output" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Output</TabsTrigger>
+                  <TabsTrigger value="input" className="text-[12px] h-5 px-2 rounded-md cursor-pointer">Input</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
-          )}
+            <div className="flex items-center gap-0.5">
+              {testResults[selectedCardId || '']?.status !== 'testing' && (
+                <button
+                  onClick={() => {
+                    setIsSplitView(true);
+                    setIsTestPanelOpen(false);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 h-6 rounded transition-colors text-black hover:bg-gray-100 cursor-pointer text-[12px] font-medium"
+                  title="Open split view"
+                >
+                  <Columns2 size={13} />
+                  <span>Split View</span>
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="h-3 bg-gradient-to-b from-white to-transparent pointer-events-none -mb-3 relative z-[5]" />
+          </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <div className="flex-1 overflow-y-auto pl-3 pr-0 pb-0 pt-0 relative group/code [&>*]:pr-[40px]">
+            {/* Floating Copy & Download buttons */}
+            {testResults[selectedCardId || '']?.status !== 'testing' && (
+              <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px]">
+                <button
+                  onClick={() => {
+                    const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
+                    const textarea = document.createElement('textarea');
+                    textarea.value = data;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    setJsonCopied(true);
+                    setTimeout(() => setJsonCopied(false), 2000);
+                  }}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative"
+                  title="Copy JSON"
+                >
+                  {jsonCopied ? <Check size={13} className="text-black" /> : <Copy size={13} className="text-black" />}
+                  <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
+                    Copy JSON
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    toast.success('JSON downloaded successfully', {
+                      position: 'bottom-right',
+                      duration: 2000,
+                    });
+                  }}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded transition-colors text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group relative"
+                  title="Download JSON"
+                >
+                  <Download size={13} className="text-black" />
+                  <span className="absolute top-full right-0 mt-1.5 px-2 py-1 text-xs text-white bg-black rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 delay-150 z-[200]">
+                    Download JSON
+                  </span>
+                </button>
+              </div>
+            )}
             {testResults[selectedCardId || '']?.status === 'testing' ? (
               <div className="h-full flex flex-col gap-2 p-4">
                 <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
@@ -2927,6 +2875,41 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
             )}
           </>
         )}
+          </div>
+
+          {/* Test Step / Cancel Button at bottom of bottom sheet */}
+          <div className="shrink-0 bg-white px-3 pt-1 pb-3 relative">
+            <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-white to-transparent" />
+            <div className="relative group">
+              {testResults[selectedCardId || '']?.status === 'testing' ? (
+                <button
+                  onClick={() => testSectionRef.current?.cancelTest()}
+                  className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer text-[14px]"
+                >
+                  Cancel Testing
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      if (hasEmptyRequiredFields) return;
+                      testSectionRef.current?.triggerTest();
+                    }}
+                    disabled={hasEmptyRequiredFields}
+                    className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
+                  >
+                    <Play size={12} fill="currentColor" />
+                    Test Step
+                    <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
+                  </button>
+                  {hasEmptyRequiredFields && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-[#1a1a2e] text-white text-[13px] rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200">
+                      Configure the step first
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           </div>
       </div>
