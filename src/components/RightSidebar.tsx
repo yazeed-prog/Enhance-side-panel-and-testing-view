@@ -2164,7 +2164,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     ) : (
                       <>
                         <Play size={14} fill="currentColor" />
-                        <span>Test Step</span>
+                        <span>{testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}</span>
                         <span className="text-[12px] opacity-60 ml-0.5">⌘G</span>
                       </>
                     )}
@@ -2371,7 +2371,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                         className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
                       >
                         <Play size={12} fill="currentColor" />
-                        Test Step
+                        {testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}
                         <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
                       </button>
                       {hasEmptyRequiredFields && (
@@ -2629,7 +2629,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                   ) : (
                     <>
                       <Play size={12} fill="currentColor" />
-                      Test Step
+                      {testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}
                       <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
                     </>
                   )}
@@ -2681,7 +2681,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
       <div 
         ref={bottomSheetRef} 
         className={`absolute bottom-0 left-0 right-0 flex flex-col transition-[height] duration-[450ms] ease-[cubic-bezier(0.25,1,0.5,1)] z-30 ${!isTestPanelOpen ? 'pointer-events-none' : ''}`}
-        style={{ height: isTestPanelOpen ? '80%' : '0%' }}
+        style={{ height: isTestPanelOpen ? '60%' : '0%' }}
       >
           {/* Bottom Panel */}
           <div 
@@ -2898,7 +2898,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
                   >
                     <Play size={12} fill="currentColor" />
-                    Test Step
+                    {testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}
                     <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
                   </button>
                   {hasEmptyRequiredFields && (
