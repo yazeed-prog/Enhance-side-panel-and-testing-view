@@ -1,4 +1,4 @@
-import { X, Pencil, HelpCircle, Plus, Calendar, Clock, Webhook, Wrench, Database, Play, ChevronLeft, ChevronRight, ChevronUp, GripVertical, GripHorizontal, Rows2, Columns2, PanelBottomClose, PanelRightClose, CheckCircle2, XCircle, Loader2, Copy, Download, ArrowLeft, Check } from 'lucide-react';
+import { X, Pencil, HelpCircle, Plus, Calendar, Clock, Webhook, Wrench, Database, Play, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, GripVertical, GripHorizontal, Rows2, Columns2, PanelBottomClose, PanelRightClose, CheckCircle2, XCircle, Loader2, Copy, Download, ArrowLeft, Check } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { DataTag, DataTagValue } from './DataTag';
@@ -7,7 +7,7 @@ import { TagInput, FUNCTION_SEPARATORS } from './TagInput';
 import { TestSection, TestSectionHandle } from './TestSection';
 import { DataSelector } from './DataSelector';
 import { APP_FIELD_DEFINITIONS } from './app-field-definitions';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { toast } from 'sonner@2.0.3';
 
 // Inline Switch Toggle component
@@ -505,6 +505,9 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
   const [isSplitView, setIsSplitView] = useState(false);
   const [testPanelTab, setTestPanelTab] = useState<'output' | 'input'>('output');
   const [jsonCopied, setJsonCopied] = useState(false);
+  const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+  const [resultDropdownOpen, setResultDropdownOpen] = useState(false);
+  const resultDropdownRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -545,6 +548,28 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
       }
     }
   }, [isSplitView]);
+
+  // Show skeleton when switching to split view
+  useEffect(() => {
+    if (isSplitView) {
+      setIsSkeletonLoading(true);
+      const timer = setTimeout(() => setIsSkeletonLoading(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [isSplitView]);
+
+  // Close result dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (resultDropdownRef.current && !resultDropdownRef.current.contains(e.target as Node)) {
+        setResultDropdownOpen(false);
+      }
+    };
+    if (resultDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [resultDropdownOpen]);
 
   // Handle Cmd+G keyboard shortcut for Test Step
   useEffect(() => {
@@ -1408,26 +1433,223 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
 
         {/* Test Panel - Only in split view mode */}
         {isSplitView && (
-          <div 
-            className="border border-gray-200 bg-gray-50 flex flex-col rounded-t-md overflow-hidden"
-            style={{
-              width: `${sidebarWidth * 0.5}px`,
-              minWidth: '200px',
-              margin: '0 10px 10px 0',
-              borderBottom: 'none',
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 0,
-            }}
-          >
-            <TestSection
-              ref={testSectionRef}
-              stepId="trigger"
-              mode="docked"
-              testPanelTab={testPanelTab}
-              onTestPanelTabChange={setTestPanelTab}
-              testResults={testResults}
-              onTestComplete={onTestComplete}
-            />
+          <div className="w-[50%] min-w-[200px] shrink-0 sticky top-0 self-start h-full overflow-hidden border border-gray-200 border-b-0 mr-[10px] mb-[10px] rounded-lg rounded-b-none">
+            {!testResults[selectedCardId || ''] ? (
+              // Empty state - no test run yet
+              <div className="h-full flex flex-col items-center justify-center gap-4 px-4">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <span className="text-sm">Configure the step to test</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (hasEmptyRequiredFields) return;
+                    const currentTestResult = testResults[selectedCardId || ''];
+                    if (currentTestResult?.status === 'testing') return;
+                    testSectionRef.current?.triggerTest();
+                  }}
+                  disabled={testResults[selectedCardId || '']?.status === 'testing' || hasEmptyRequiredFields}
+                  className={`px-2 py-1 rounded transition-colors flex items-center gap-1.5 text-[13px] ${
+                    hasEmptyRequiredFields || testResults[selectedCardId || '']?.status === 'testing'
+                      ? 'text-purple-300 opacity-50 cursor-not-allowed'
+                      : 'text-[hsl(257,74%,50%)] hover:bg-[hsl(257,74%,95%)] cursor-pointer'
+                  }`}
+                >
+                  {testResults[selectedCardId || '']?.status === 'testing' ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-purple-400" />
+                      <span>Testing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} fill="currentColor" />
+                      <span>Test Step</span>
+                      <span className="text-[12px] opacity-60 ml-0.5">⌘G</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+            <div className="h-full flex flex-col">
+            {/* Status Header */}
+            <div className={`flex items-center justify-between px-2 py-1 shrink-0 border-b border-gray-200 ${
+              testResults[selectedCardId || '']?.status === 'success' ? 'bg-[#f0fdf4]' :
+              testResults[selectedCardId || '']?.status === 'failed' ? 'bg-red-50' :
+              testResults[selectedCardId || '']?.status === 'testing' ? 'bg-[hsl(257,74%,97%)]' :
+              'bg-gray-50'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                {testResults[selectedCardId || '']?.status === 'success' ? (
+                  <>
+                    <CheckCircle2 size={13} className="text-[#08943C] shrink-0" />
+                    <span className="text-[12px] text-[#08943C] font-medium">Tested</span>
+                  </>
+                ) : testResults[selectedCardId || '']?.status === 'failed' ? (
+                  <>
+                    <XCircle size={13} className="text-[oklch(0.45_0.213_27.518)] shrink-0" />
+                    <span className="text-[12px] text-[oklch(0.45_0.213_27.518)] font-normal">Test Failed</span>
+                  </>
+                ) : testResults[selectedCardId || '']?.status === 'testing' ? (
+                  <>
+                    <Loader2 size={13} className="text-[hsl(257,74%,50%)] animate-spin shrink-0" />
+                    <span className="text-[12px] text-[hsl(257,74%,50%)] font-medium">Testing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play size={13} className="text-gray-400 shrink-0" fill="currentColor" />
+                    <span className="text-[12px] text-gray-500 font-medium">Not tested</span>
+                  </>
+                )}
+              </div>
+              {testResults[selectedCardId || '']?.date && (
+                <span className="text-[12px] text-gray-500">{testResults[selectedCardId || ''].date}</span>
+              )}
+            </div>
+            {/* Test Panel Header */}
+            <div className="relative z-10 shrink-0">
+            <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white gap-1">
+              <div className="flex items-center gap-1 min-w-0">
+                  <Tabs value={testPanelTab} onValueChange={(v) => { if (testResults[selectedCardId || '']?.status !== 'testing') setTestPanelTab(v as 'output' | 'input'); }} className="shrink-0">
+                    <TabsList className="h-6 rounded-md">
+                      <TabsTrigger value="output" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Output</TabsTrigger>
+                      <TabsTrigger value="input" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Input</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  {/* Result selector dropdown - Trigger only */}
+                  {isTrigger && testResults[selectedCardId || '']?.status !== 'testing' && (
+                    <div className="relative min-w-0" ref={resultDropdownRef}>
+                      <button
+                        onClick={() => setResultDropdownOpen(!resultDropdownOpen)}
+                        className="inline-flex items-center gap-1 px-2 h-6 rounded text-[12px] text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors min-w-0 max-w-full"
+                      >
+                        <span className="truncate">Result #{selectedResultIndex + 1}</span>
+                        <ChevronDown size={12} className="shrink-0" />
+                      </button>
+                      {resultDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[120px] py-1">
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <button
+                              key={i}
+                              onClick={() => { setSelectedResultIndex(i); setResultDropdownOpen(false); }}
+                              className={`w-full text-left px-3 py-1.5 text-[13px] hover:bg-gray-50 cursor-pointer ${selectedResultIndex === i ? 'text-[hsl(257,74%,45%)] font-medium bg-gray-50' : 'text-gray-700'}`}
+                            >
+                              Result #{i + 1}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+              </div>
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  onClick={() => {
+                    setIsSplitView(false);
+                    setIsTestPanelOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 h-6 rounded transition-colors text-black hover:bg-gray-100 cursor-pointer text-[12px] font-medium"
+                  title="Collapse"
+                >
+                  <PanelBottomClose size={13} />
+                  {sidebarWidth * 0.5 > 250 && <span>Collapse</span>}
+                </button>
+              </div>
+            </div>
+            <div className="h-3 bg-gradient-to-b from-white to-transparent pointer-events-none -mb-3 relative z-[5]" />
+            </div>
+              <div className="flex-1 min-h-0 overflow-y-auto pl-[12px] pr-0 pb-0 pt-0 m-[0px] relative group/code [&>*]:pr-[40px] [&>*]:pt-[15px] [&>*]:pb-[15px]">
+              {/* Floating Copy & Download buttons */}
+              {testResults[selectedCardId || '']?.status !== 'testing' && (
+                <div className="absolute top-2 right-3 flex items-center gap-0.5 z-20 bg-white rounded-md p-[2px] shadow-sm opacity-0 group-hover/code:opacity-100 transition-opacity duration-200 !pr-[2px] !pt-0 !pb-0">
+                  <button
+                    onClick={() => {
+                      const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
+                      navigator.clipboard.writeText(data);
+                      setJsonCopied(true);
+                      setTimeout(() => setJsonCopied(false), 2000);
+                    }}
+                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
+                  >
+                    {jsonCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} strokeWidth={2.5} />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const data = testPanelTab === 'input' ? JSON.stringify({cc:"",bcc:"",auth:{type:"OAuth2"},body:"Hello",receiver:"test@example.com"}, null, 2) : JSON.stringify({status:200,data:{id:"msg123"}}, null, 2);
+                      const blob = new Blob([data], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${testPanelTab}-data.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
+                  >
+                    <Download size={13} strokeWidth={2.5} />
+                  </button>
+                </div>
+              )}
+                {testResults[selectedCardId || '']?.status === 'testing' ? (
+                  <div className="h-full flex flex-col gap-2 p-4">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                  </div>
+                ) : (
+                  <Tabs value={testPanelTab}>
+                    <TabsContent value="output">
+                      <div className={testPanelTab === 'output' ? 'h-full overflow-auto' : 'hidden'}>
+                        <TreeJsonViewer data={{status:200,data:{id:"msg123",threadId:"thread456",labelIds:["SENT"]}}} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="input">
+                      <div className="h-full overflow-auto">
+                        <TreeJsonViewer data={{to:"test@example.com",subject:"Hello",body:"<p>Test</p>",cc:"",bcc:"",auth:{type:"OAuth2"}}} />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                )}
+              </div>
+              {/* Test Step / Cancel Button at bottom of split view */}
+              <div className="shrink-0 bg-white px-3 pt-1 pb-3 relative">
+                <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-white to-transparent" />
+                <div className="relative group">
+                  {testResults[selectedCardId || '']?.status === 'testing' ? (
+                    <button
+                      onClick={() => testSectionRef.current?.cancelTest()}
+                      className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer text-[14px]"
+                    >
+                      <Loader2 size={13} className="animate-spin" />
+                      Cancel Testing
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (hasEmptyRequiredFields) return;
+                          testSectionRef.current?.triggerTest();
+                        }}
+                        disabled={hasEmptyRequiredFields}
+                        className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
+                      >
+                        <Play size={12} fill="currentColor" />
+                        {testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}
+                        <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
+                      </button>
+                      {hasEmptyRequiredFields && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-[#1a1a2e] text-white text-[13px] rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200">
+                          Configure the step first
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            )}
           </div>
         )}
       </div>
@@ -2208,16 +2430,41 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
               </div>
               {/* Test Panel Header */}
               <div className="relative z-10 shrink-0">
-              <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white">
-                <div className="flex items-center gap-1">
-                    <Tabs value={testPanelTab} onValueChange={(v) => { if (testResults[selectedCardId || '']?.status !== 'testing') setTestPanelTab(v as 'output' | 'input'); }}>
+              <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5 bg-white gap-1">
+                <div className="flex items-center gap-1 min-w-0">
+                    <Tabs value={testPanelTab} onValueChange={(v) => { if (testResults[selectedCardId || '']?.status !== 'testing') setTestPanelTab(v as 'output' | 'input'); }} className="shrink-0">
                       <TabsList className="h-6 rounded-md">
                         <TabsTrigger value="output" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Output</TabsTrigger>
                         <TabsTrigger value="input" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Input</TabsTrigger>
                       </TabsList>
                     </Tabs>
+                    {/* Result selector dropdown - Trigger only */}
+                    {isTrigger && testResults[selectedCardId || '']?.status !== 'testing' && (
+                      <div className="relative" ref={resultDropdownRef}>
+                        <button
+                          onClick={() => setResultDropdownOpen(!resultDropdownOpen)}
+                          className="inline-flex items-center gap-1 px-2 h-6 rounded text-[12px] text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                        >
+                          Result #{selectedResultIndex + 1}
+                          <ChevronDown size={12} />
+                        </button>
+                        {resultDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[120px] py-1">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <button
+                                key={i}
+                                onClick={() => { setSelectedResultIndex(i); setResultDropdownOpen(false); }}
+                                className={`w-full text-left px-3 py-1.5 text-[13px] hover:bg-gray-50 cursor-pointer ${selectedResultIndex === i ? 'text-[hsl(257,74%,45%)] font-medium bg-gray-50' : 'text-gray-700'}`}
+                              >
+                                Result #{i + 1}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                 </div>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     onClick={() => {
                       setIsSplitView(false);
@@ -2227,7 +2474,7 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                     title="Collapse"
                   >
                     <PanelBottomClose size={13} />
-                    <span>Collapse</span>
+                    {sidebarWidth * 0.5 > 250 && <span>Collapse</span>}
                   </button>
                 </div>
               </div>
@@ -2356,8 +2603,9 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                   {testResults[selectedCardId || '']?.status === 'testing' ? (
                     <button
                       onClick={() => testSectionRef.current?.cancelTest()}
-                      className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer text-[14px]"
+                      className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer text-[14px]"
                     >
+                      <Loader2 size={13} className="animate-spin" />
                       Cancel Testing
                     </button>
                   ) : (
@@ -2568,34 +2816,58 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
 
         {/* Render appropriate configuration */}
         {isSkeletonLoading ? (
-          <div className="flex-1 overflow-hidden p-4 space-y-5 animate-pulse">
-            {/* Skeleton field 1 */}
-            <div className="space-y-2">
-              <div className="h-3.5 w-24 bg-gray-200 rounded" />
-              <div className="h-9 w-full bg-gray-200 rounded-lg" />
+          <div className={`flex-1 overflow-hidden h-full ${isSplitView ? 'flex' : ''}`}>
+            <div className={`p-4 space-y-5 animate-pulse ${isSplitView ? 'flex-1 min-w-0' : ''}`}>
+              {/* Skeleton field 1 */}
+              <div className="space-y-2">
+                <div className="h-3.5 w-24 bg-gray-200 rounded" />
+                <div className="h-9 w-full bg-gray-200 rounded-lg" />
+              </div>
+              {/* Skeleton field 2 */}
+              <div className="space-y-2">
+                <div className="h-3.5 w-32 bg-gray-200 rounded" />
+                <div className="h-9 w-full bg-gray-200 rounded-lg" />
+              </div>
+              {/* Skeleton field 3 */}
+              <div className="space-y-2">
+                <div className="h-3.5 w-20 bg-gray-200 rounded" />
+                <div className="h-9 w-full bg-gray-200 rounded-lg" />
+              </div>
+              {/* Skeleton field 4 - textarea */}
+              <div className="space-y-2">
+                <div className="h-3.5 w-28 bg-gray-200 rounded" />
+                <div className="h-24 w-full bg-gray-200 rounded-lg" />
+              </div>
+              {/* Skeleton divider */}
+              <div className="h-px w-full bg-gray-200 my-4" />
+              {/* Skeleton field 5 */}
+              <div className="space-y-2">
+                <div className="h-3.5 w-36 bg-gray-200 rounded" />
+                <div className="h-9 w-full bg-gray-200 rounded-lg" />
+              </div>
             </div>
-            {/* Skeleton field 2 */}
-            <div className="space-y-2">
-              <div className="h-3.5 w-32 bg-gray-200 rounded" />
-              <div className="h-9 w-full bg-gray-200 rounded-lg" />
-            </div>
-            {/* Skeleton field 3 */}
-            <div className="space-y-2">
-              <div className="h-3.5 w-20 bg-gray-200 rounded" />
-              <div className="h-9 w-full bg-gray-200 rounded-lg" />
-            </div>
-            {/* Skeleton field 4 - textarea */}
-            <div className="space-y-2">
-              <div className="h-3.5 w-28 bg-gray-200 rounded" />
-              <div className="h-24 w-full bg-gray-200 rounded-lg" />
-            </div>
-            {/* Skeleton divider */}
-            <div className="h-px w-full bg-gray-200 my-4" />
-            {/* Skeleton field 5 */}
-            <div className="space-y-2">
-              <div className="h-3.5 w-36 bg-gray-200 rounded" />
-              <div className="h-9 w-full bg-gray-200 rounded-lg" />
-            </div>
+            {/* Skeleton test panel in split view */}
+            {isSplitView && (
+              <div className="w-[50%] min-w-[200px] shrink-0 h-full border border-gray-200 border-b-0 mr-[10px] mb-[10px] rounded-lg rounded-b-none animate-pulse">
+                <div className="p-3 border-b border-gray-200 bg-gray-50">
+                  <div className="h-3 w-20 bg-gray-200 rounded" />
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="flex gap-2">
+                    <div className="h-6 w-16 bg-gray-200 rounded-md" />
+                    <div className="h-6 w-16 bg-gray-200 rounded-md" />
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <div className="h-3 w-full bg-gray-200 rounded" />
+                    <div className="h-3 w-3/4 bg-gray-200 rounded" />
+                    <div className="h-3 w-5/6 bg-gray-200 rounded" />
+                    <div className="h-3 w-2/3 bg-gray-200 rounded" />
+                    <div className="h-3 w-full bg-gray-200 rounded" />
+                    <div className="h-3 w-1/2 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : renderConfigContent()}
 
@@ -2621,20 +2893,50 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                       }, 50);
                     }
                   }}
-                  disabled={hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed'))}
-                  className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${ (hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed'))) ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer' } text-[14px]`}
+                  disabled={hasEmptyRequiredFields && !(testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed' || testResults[selectedCardId || ''].status === 'testing'))}
+                  className={`w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors ${
+                    testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed' || testResults[selectedCardId || ''].status === 'testing')
+                      ? 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
+                      : (hasEmptyRequiredFields ? 'bg-[hsl(257,74%,93%)] text-[hsl(257,74%,50%)] border border-[hsl(257,74%,80%)] opacity-50 cursor-not-allowed' : 'bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer')
+                  } text-[14px]`}
                 >
-                  {testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed') ? (
+                  {testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed' || testResults[selectedCardId || ''].status === 'testing') ? (
                     'Show Sample Data'
                   ) : (
                     <>
                       <Play size={12} fill="currentColor" />
-                      {testResults[selectedCardId || '']?.status === 'success' || testResults[selectedCardId || '']?.status === 'failed' ? 'Retest Step' : 'Test Step'}
+                      Test Step
                       <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
                     </>
                   )}
                 </button>
               </div>
+              {/* Retest / Cancel button - shown below Show Sample Data */}
+              {testResults[selectedCardId || ''] && (testResults[selectedCardId || ''].status === 'success' || testResults[selectedCardId || ''].status === 'failed' || testResults[selectedCardId || ''].status === 'testing') && (
+                testResults[selectedCardId || '']?.status === 'testing' ? (
+                  <button
+                    onClick={() => testSectionRef.current?.cancelTest()}
+                    className="w-full px-2 py-1 mt-2 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer text-[14px]"
+                  >
+                    <Loader2 size={13} className="animate-spin" />
+                    Cancel Testing
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsTestPanelOpen(true);
+                      setTimeout(() => {
+                        testSectionRef.current?.triggerTest();
+                      }, 50);
+                    }}
+                    className="w-full px-2 py-1 mt-2 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-[hsl(257,74%,88%)] text-[hsl(257,74%,45%)] border border-[hsl(257,74%,75%)] hover:bg-[hsl(257,74%,83%)] cursor-pointer text-[14px]"
+                  >
+                    <Play size={12} fill="currentColor" />
+                    Retest Step
+                    <span className="ml-0.5 opacity-60 text-[12px]">⌘ + G</span>
+                  </button>
+                )
+              )}
               {testButtonTooltip && hasEmptyRequiredFields && testButtonWrapperRef.current && createPortal(
                 <div
                   className="flex flex-col items-center pointer-events-none"
@@ -2732,6 +3034,31 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
                   <TabsTrigger value="input" className={`text-[12px] h-5 px-2 rounded-md ${testResults[selectedCardId || '']?.status === 'testing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>Input</TabsTrigger>
                 </TabsList>
               </Tabs>
+              {/* Result selector dropdown - Trigger only */}
+              {isTrigger && testResults[selectedCardId || '']?.status !== 'testing' && (
+                <div className="relative" ref={resultDropdownRef}>
+                  <button
+                    onClick={() => setResultDropdownOpen(!resultDropdownOpen)}
+                    className="inline-flex items-center gap-1 px-2 h-6 rounded text-[12px] text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors min-w-0"
+                  >
+                    <span className="truncate">Result #{selectedResultIndex + 1}</span>
+                    <ChevronDown size={12} className="shrink-0" />
+                  </button>
+                  {resultDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[120px] py-1">
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <button
+                          key={i}
+                          onClick={() => { setSelectedResultIndex(i); setResultDropdownOpen(false); }}
+                          className={`w-full text-left px-3 py-1.5 text-[13px] hover:bg-gray-50 cursor-pointer ${selectedResultIndex === i ? 'text-[hsl(257,74%,45%)] font-medium bg-gray-50' : 'text-gray-700'}`}
+                        >
+                          Result #{i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-0.5">
                 <button
@@ -2883,8 +3210,9 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
               {testResults[selectedCardId || '']?.status === 'testing' ? (
                 <button
                   onClick={() => testSectionRef.current?.cancelTest()}
-                  className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer text-[14px]"
+                  className="w-full px-2 py-1 rounded-md flex items-center justify-center gap-1 shadow-sm transition-colors bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer text-[14px]"
                 >
+                  <Loader2 size={13} className="animate-spin" />
                   Cancel Testing
                 </button>
               ) : (
