@@ -2174,15 +2174,7 @@ export const TagInput = forwardRef<any, TagInputProps>((
 
   return (
     <div ref={containerRef} className="relative group/taginput" data-tag-input="true">
-      {/* Preview / Edit toggle link */}
-      <button
-        onClick={handleSeeOutput}
-        onMouseDown={(e) => { e.preventDefault(); }}
-        className={`absolute -top-[22px] right-0 z-20 flex items-center gap-1 text-[12px] cursor-pointer transition-all duration-150 opacity-0 group-hover/field:opacity-100 ${showOutputOverlay ? 'text-purple-500 hover:text-purple-700 !opacity-100' : 'text-gray-400 hover:text-gray-600'}`}
-      >
-        {showOutputOverlay ? <Pencil size={13} /> : <Eye size={14} />}
-        <span>{showOutputOverlay ? 'Edit' : 'Preview'}</span>
-      </button>
+      {/* Preview / Edit toggle link - hidden */}
 
       <style dangerouslySetInnerHTML={{
         __html: `

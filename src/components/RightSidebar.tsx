@@ -1296,9 +1296,9 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
   // Render Trigger Configuration
   const renderTriggerConfig = () => (
     <>
-      <div className={`flex-1 overflow-hidden h-full ${isSplitView ? 'flex' : ''}`}>
+      <div className={`flex-1 overflow-hidden h-full flex ${isSplitView ? 'flex-row' : 'flex-col'}`}>
         {/* Fields Column */}
-        <div className={`p-4 space-y-4 ${isSplitView ? 'flex-1 min-w-0 overflow-y-auto' : ''}`}>
+        <div className={`p-4 space-y-4 flex-1 min-h-0 overflow-y-auto ${isSplitView ? 'min-w-0' : ''}`}>
         {/* Trigger Type Field */}
         <div>
           <label className="flex items-center gap-1 text-sm text-gray-700 mb-2">
@@ -1974,9 +1974,9 @@ export function RightSidebar({ selectedCardId, steps, onClose, canvasDimensions,
     
     return (
       <>
-        <div className={`flex-1 overflow-hidden h-full ${isSplitView ? 'flex' : ''}`}>
+        <div className={`flex-1 overflow-hidden h-full flex ${isSplitView ? 'flex-row' : 'flex-col'}`}>
           {/* Fields Column */}
-          <div className={`p-4 space-y-4 ${isSplitView ? 'flex-1 min-w-0 overflow-y-auto' : ''}`}>
+          <div className={`p-4 space-y-4 flex-1 min-h-0 overflow-y-auto ${isSplitView ? 'min-w-0' : ''}`}>
           {/* App Info */}
 
 
